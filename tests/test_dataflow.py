@@ -835,7 +835,7 @@ def test_workflow_with_child_workflow_failed():
     executor = Executor(DOMAIN, workflow)
     history = builder.History(workflow, input={'args': (1,)})
 
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
      # Let's add the child workflow to the history to simulate its completion.
     (history
         .add_child_workflow(
@@ -847,7 +847,7 @@ def test_workflow_with_child_workflow_failed():
         ))
     # The child workflow fails and the executor should fail the
     # main workflow.
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
     fail_workflow = swf.models.decision.WorkflowExecutionDecision()
     fail_workflow.fail(reason='FAIL')
 
@@ -862,7 +862,7 @@ def test_workflow_with_child_workflow_timed_out():
     executor = Executor(DOMAIN, workflow)
     history = builder.History(workflow, input={'args': (1,)})
 
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
      # Let's add the child workflow to the history to simulate its completion.
     (history
         .add_child_workflow(
@@ -874,7 +874,7 @@ def test_workflow_with_child_workflow_timed_out():
         ))
     # The child workflow fails and the executor should fail the
     # main workflow.
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
     fail_workflow = swf.models.decision.WorkflowExecutionDecision()
     fail_workflow.fail(reason='timed out')
 
@@ -889,7 +889,7 @@ def test_workflow_with_child_workflow_canceled():
     executor = Executor(DOMAIN, workflow)
     history = builder.History(workflow, input={'args': (1,)})
 
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
      # Let's add the child workflow to the history to simulate its completion.
     (history
         .add_child_workflow(
@@ -901,7 +901,7 @@ def test_workflow_with_child_workflow_canceled():
         ))
     # The child workflow fails and the executor should fail the
     # main workflow.
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
     fail_workflow = swf.models.decision.WorkflowExecutionDecision()
     fail_workflow.cancel()
 
@@ -916,7 +916,7 @@ def test_workflow_with_child_workflow_terminated():
     executor = Executor(DOMAIN, workflow)
     history = builder.History(workflow, input={'args': (1,)})
 
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
      # Let's add the child workflow to the history to simulate its completion.
     (history
         .add_child_workflow(
@@ -928,7 +928,7 @@ def test_workflow_with_child_workflow_terminated():
         ))
     # The child workflow fails and the executor should fail the
     # main workflow.
-    decisions, _ = executor.replay(history)
+    decisions, _ = executor.replay(Response(history=history))
     fail_workflow = swf.models.decision.WorkflowExecutionDecision()
     fail_workflow.terminate()
 
