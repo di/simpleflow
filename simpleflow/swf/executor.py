@@ -477,7 +477,9 @@ class Executor(executor.Executor):
         :rtype: futures.Future
         :raise: exceptions.ExecutionBlocked if open activities limit reached
         """
-        a_task.id = self._make_task_id(a_task, *args, **kwargs)
+
+        if not a_task.id:  # Could be set by a subclass
+            a_task.id = self._make_task_id(a_task, *args, **kwargs)
         event = self.find_event(a_task, self._history)
         future = None
 
