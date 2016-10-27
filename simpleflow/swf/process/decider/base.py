@@ -27,25 +27,6 @@ class Decider(Supervisor):
             nb_children=nb_children,
         )
 
-    @classmethod
-    def make(cls, workflows, domain, task_list, nb_children=None):
-        """
-        Factory method.
-
-        :param workflows:
-        :type workflows: list[str]
-        :param domain:
-        :type domain: str
-        :param task_list:
-        :type task_list: str
-        :param nb_children:
-        :type nb_children: int
-        :return:
-        :rtype: Decider
-        """
-        poller = DeciderPoller.make(workflows, domain, task_list)
-        return Decider(poller, nb_children=nb_children)
-
 
 class DeciderPoller(swf.actors.Decider, Poller):
     """
@@ -120,29 +101,6 @@ class DeciderPoller(swf.actors.Decider, Poller):
             task_list=self.task_list,
             workflows=','.join(self._workflow_executors),
         )
-
-    @classmethod
-    def make(cls, workflows, domain, task_list):
-        """
-        Factory method.
-
-        :param workflows: workflows names.
-        :type workflows: list[str]
-        :param domain:domain name.
-        :type domain: str
-        :param task_list: task list.
-        :type task_list: str
-        :return:
-        :rtype: DeciderPoller
-        """
-        from . import helpers
-
-        workflow_executors = [
-            helpers.load_workflow_executor(domain, workflow, task_list) for
-            workflow in workflows
-            ]
-        domain = swf.models.Domain(domain)
-        return cls(workflow_executors, domain, task_list)
 
     @property
     def name(self):
