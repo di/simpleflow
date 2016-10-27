@@ -18,6 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 class Decider(Supervisor):
+    """
+    Decider.
+
+    :ivar _poller: decider poller.
+    :type _poller: DeciderPoller
+    """
     def __init__(self, poller, nb_children=None):
         self._poller = poller
         self._poller.is_alive = True
@@ -108,6 +114,7 @@ class DeciderPoller(swf.actors.Decider, Poller):
         The main purpose of this property is to find what workflow a decider
         handles.
 
+        :rtype: str
         """
         if self._workflow_name:
             suffix = '(workflow={})'.format(self._workflow_name)
@@ -125,14 +132,12 @@ class DeciderPoller(swf.actors.Decider, Poller):
 
     def process(self, decision_response):
         """
-        Takes a PollForDecisionTask response object and tries to complete the
+        Take a PollForDecisionTask response object and try to complete the
         decision task, by calling self._complete() with the response token and
         a set of decisions.
 
-        :param decision_response: an object wrapping the PollForDecisionTask response
+        :param decision_response: an object wrapping the PollForDecisionTask response.
         :type  decision_response: swf.responses.Response
-
-        :returns: None
         """
         logger.info('taking decision for workflow {}'.format(
             self._workflow_name))
@@ -150,10 +155,10 @@ class DeciderPoller(swf.actors.Decider, Poller):
         Delegate the decision to the decider worker (which itself delegates to
         the executor).
 
-        :param decision_response: an object wrapping the PollForDecisionTask response
+        :param decision_response: an object wrapping the PollForDecisionTask response.
         :type  decision_response: swf.responses.Response
 
-        :returns:
+        :return: the decisions.
         :rtype: list[swf.models.decision.base.Decision]
         """
         worker = DeciderWorker(self.domain, self._workflow_executors)
@@ -179,18 +184,19 @@ class DeciderWorker(object):
 
     def decide(self, decision_response):
         """
-        Delegate the decision to the executor.
+        Delegate the decision to the executor, loading it if needed.
 
-        :param decision_response: an object wrapping the PollForDecisionTask response
+        :param decision_response: an object wrapping the PollForDecisionTask response.
         :type  decision_response: swf.responses.Response
 
-        :returns: the decisions
+        :returns: the decisions.
         :rtype: list[swf.models.decision.base.Decision]
         """
         history = decision_response.history
         workflow_name = history[0].workflow_type['name']
         workflow_executor = self._workflow_executors.get(workflow_name)
         if not workflow_executor:
+            # FIXME is this possible?
             from . import helpers
             workflow_executor = helpers.load_workflow_executor(
                 self._domain,
@@ -200,7 +206,7 @@ class DeciderWorker(object):
         self._workflow_name = workflow_name
         try:
             decisions = workflow_executor.replay(decision_response)
-            if isinstance(decisions, tuple) and len(decisions) == 2:  # (decisions, context)
+            if isinstance(decisions, tuple) and len(decisions) == 2:  # (decisions, obsolete context)
                 decisions = decisions[0]
         except Exception as err:
             import traceback
