@@ -25,7 +25,7 @@ def make_worker_poller(workflow, domain, task_list, heartbeat):
     return ActivityPoller(
         domain,
         task_list,
-        helpers.load_workflow(domain, workflow),
+        helpers.load_workflow_executor(domain, workflow),
         heartbeat,
     )
 
