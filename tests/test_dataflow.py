@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+
+import uuid
+
 from builtins import range
 
 import functools
@@ -31,6 +34,7 @@ from .data import (
     raise_on_failure,
     triple,
     Tetra,
+    get_uuid,
 )
 
 
@@ -40,8 +44,6 @@ class ATestWorkflow(Workflow):
     task_list = 'test_task_list'
     decision_tasks_timeout = '300'
     execution_timeout = '3600'
-    tag_list = None  # FIXME should be optional
-    child_policy = None  # FIXME should be optional
 
 
 def check_task_scheduled_decision(decision, task):
@@ -1380,3 +1382,47 @@ def test_task_naming():
     for i in range(0, len(expected)):
         decision = decisions[i]['scheduleActivityTaskDecisionAttributes']
         assert decision['activityId'] == expected[i]
+
+
+class ATestDefinitionWithIdempotentTask(ATestWorkflow):
+    def run(self):
+        results = [
+            self.submit(get_uuid),
+            self.submit(get_uuid),
+        ]
+        results.append(
+            self.submit(get_uuid, results[0].result)
+        )
+        futures.wait(*results)
+        assert all(r.result == results[0].result for r in results[1:])
+
+
+@mock_swf
+def test_idempotent_called_once():
+    workflow = ATestDefinitionWithIdempotentTask
+    executor = Executor(DOMAIN, workflow)
+
+    history = builder.History(workflow, input={})
+    history.add_decision_task_completed()
+    decision_id = history.last_id
+    history.add_activity_task_scheduled(
+        activity=get_uuid,
+        decision_id=decision_id,
+        activity_id='activity-tests.data.activities.get_uuid-1c819d1df3ad46e07eced4ec93147ce9',
+    )
+    scheduled_id = history.last_id
+    history.add_activity_task_schedule_failed(
+        activity_id='activity-tests.data.activities.get_uuid-1c819d1df3ad46e07eced4ec93147ce9',
+        decision_id=decision_id,
+        activity_type={
+            'name': get_uuid.name,
+            'version': get_uuid.version,
+        },
+        cause='ACTIVITY_ID_ALREADY_IN_USE',
+    )
+    history.add_decision_task()
+    history.add_activity_task_started(scheduled_id)
+    history.add_activity_task_completed(scheduled_id, history.last_id, str(uuid.uuid4()))
+    history.add_decision_task()
+
+    decisions, _ = executor.replay(Response(history=history))
